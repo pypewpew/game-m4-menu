@@ -2,7 +2,6 @@ import ugame
 import stage
 import os
 import microcontroller
-import pew
 import sys
 import gc
 
@@ -14,7 +13,6 @@ def menu():
     game = stage.Stage(ugame.display, 12)
     cursor = stage.Text(2, 2)
     text = stage.Text(20, 16, palette=_PALETTE)
-    sprites = [cursor]
     game.layers = [cursor, text]
 
     for x in range(0, 20):
@@ -48,7 +46,6 @@ def menu():
     for i, name in enumerate(files[:13]):
         text.cursor(2, 2 + i)
         text.text(name[:17])
-        text.text("\n")
 
     x = -2
     x_anim = 0, 1, 3, 1, 0, -1, -3, -1
@@ -80,8 +77,6 @@ def menu():
 
 
 selected = menu()
-del sys.modules['pew']
-del pew
 gc.collect()
 __import__(selected)
 
