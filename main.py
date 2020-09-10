@@ -2,19 +2,40 @@ import ugame
 import stage
 import os
 import microcontroller
-import pew
 import sys
 import gc
+from micropython import const
+
+_numkeys = const(7)
+_repdelay = const(9)
+_repperiod = const(2)
+_repeatstates = bytearray(_numkeys)
+def buttonevents():
+    buttons = ugame.buttons.get_pressed()
+    events = 0
+    bit = 1
+    for i in range(_numkeys):
+        st = _repeatstates[i]
+        if buttons & bit:
+            st += 1
+            if st >= _repdelay + _repperiod:
+                st = _repdelay
+            if st == 1 or st == _repdelay:
+                events |= bit
+        else:
+            st = 0
+        _repeatstates[i] = st
+        bit <<= 1
+    return events
 
 _PALETTE = (
     b'b\xdb\x00\x00\xcey\xff\xffS\xc0\x01\x80K\x00\xb6\xa9\x00\x00\x00\x00'
     b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
 
 def menu():
-    game = stage.Stage(ugame.display, 12)
+    game = stage.Stage(ugame.display, 24)
     cursor = stage.Text(2, 2)
     text = stage.Text(20, 16, palette=_PALETTE)
-    sprites = [cursor]
     game.layers = [cursor, text]
 
     for x in range(0, 20):
@@ -37,7 +58,7 @@ def menu():
     cursor.char(1, 0, '\x14')
     cursor.char(0, 1, '\x15')
     cursor.char(1, 1, '\x16')
-    cursor.move(0, 8)
+    cursor.move(0, 14)
 
     text.cursor(16, 0)
     text.char(14, 0, '\x98')
@@ -48,18 +69,14 @@ def menu():
     for i, name in enumerate(files[:13]):
         text.cursor(2, 2 + i)
         text.text(name[:17])
-        text.text("\n")
 
     x = -2
-    x_anim = 0, 1, 3, 1, 0, -1, -3, -1
+    x_anim = 0, 1, 0, 1, 1, 0, 1, 0, 0, -1, 0, -1, -1, 0, -1, 0
     x_frame = 0
-    y = 0
+    y = prevy = 0
     game.render_block()
     while True:
-        buttons = ugame.buttons.get_pressed()
-        if buttons:
-            while ugame.buttons.get_pressed():
-                game.tick()
+        buttons = buttonevents()
         if buttons & ugame.K_O:
             selected = files[y]
             for y in range(16):
@@ -74,14 +91,13 @@ def menu():
             y += 1
         x += x_anim[x_frame]
         x_frame = (x_frame + 1) % len(x_anim)
-        cursor.move(x, y * 8 + 14)
+        cursor.move(x, y * 6 + prevy * 2 + 14)
+        prevy = y
         game.render_block(0, y * 8 + 8, 32, y * 8 + 40)
         game.tick()
 
 
 selected = menu()
-del sys.modules['pew']
-del pew
 gc.collect()
 __import__(selected)
 
