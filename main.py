@@ -35,20 +35,22 @@ _PALETTE = (
 def menu():
     game = stage.Stage(ugame.display, 24)
     cursor = stage.Text(2, 2)
-    text = stage.Text(20, 16, palette=_PALETTE)
-    game.layers = [cursor, text]
+    bkgnd = stage.Text(21, 17, palette=_PALETTE)
+    batt = stage.Text(6, 1, palette=_PALETTE)
+    text = stage.Text(20, 16)
+    game.layers = [cursor, text, batt, bkgnd]
 
-    for x in range(0, 20):
-        for y in range(2, 15):
-            text.char(x, y, ' ')
-        text.char(x, 0, '\x97')
+    for x in range(21):
+        for y in range(17):
+            bkgnd.char(x, y, ' ' if 1 < x < 20 and 1 < y < 16 else '\x97')
+    bkgnd.move(-4, -4)
+
+    for x in range(2, 19):
         text.char(x, 1, '\x0e')
         text.char(x, 15, '\x12')
-    for y in range(0, 16):
-        text.char(0, y, '\x97')
-        if y > 1:
-            text.char(1, y, '\x0c')
-            text.char(19, y, '\x10')
+    for y in range(2, 15):
+        text.char(1, y, '\x0c')
+        text.char(19, y, '\x10')
     text.char(1, 1, '\x0b')
     text.char(1, 15, '\x0d')
     text.char(19, 1, '\x0f')
@@ -60,9 +62,8 @@ def menu():
     cursor.char(1, 1, '\x16')
     cursor.move(0, 14)
 
-    text.cursor(16, 0)
-    text.char(14, 0, '\x98')
-    text.text('%1.2fV' % microcontroller.cpu.voltage, True)
+    batt.text('\x98%1.2fV' % microcontroller.cpu.voltage, True)
+    batt.move(112, 0)
 
     files = [name[:-3] for name in os.listdir()
              if name.endswith('.py') and name not in ('main.py', 'boot.py')]
