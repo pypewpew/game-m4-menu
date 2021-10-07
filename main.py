@@ -6,55 +6,36 @@ import sys
 import gc
 from micropython import const
 
-_numkeys = const(7)
-_repdelay = const(9)
-_repperiod = const(2)
-_repeatstates = bytearray(_numkeys)
-def buttonevents():
-    buttons = ugame.buttons.get_pressed()
-    events = 0
-    bit = 1
-    for i in range(_numkeys):
-        st = _repeatstates[i]
-        if buttons & bit:
-            st += 1
-            if st >= _repdelay + _repperiod:
-                st = _repdelay
-            if st == 1 or st == _repdelay:
-                events |= bit
-        else:
-            st = 0
-        _repeatstates[i] = st
-        bit <<= 1
-    return events
 
 _PALETTE = (
     b'b\xdb\x00\x00\xcey\xff\xffS\xc0\x01\x80K\x00\xb6\xa9\x00\x00\x00\x00'
     b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
 
 def menu():
-    game = stage.Stage(ugame.display, 24)
+    game = stage.Stage(ugame.display, 24, scale=2)
+    w = game.width // 8
+    h = game.height // 8
     cursor = stage.Text(2, 2)
-    bkgnd = stage.Text(21, 17, palette=_PALETTE)
+    bkgnd = stage.Text(w, h, palette=_PALETTE)
     batt = stage.Text(6, 1, palette=_PALETTE)
-    text = stage.Text(20, 16)
+    text = stage.Text(w, h - 1)
     game.layers = [cursor, text, batt, bkgnd]
 
-    for x in range(21):
-        for y in range(17):
-            bkgnd.char(x, y, ' ' if 1 < x < 20 and 1 < y < 16 else '\x97')
+    for x in range(w):
+        for y in range(h):
+            bkgnd.char(x, y, ' ' if 1 < x < w and 1 < y < h - 1 else '\x97')
     bkgnd.move(-4, -4)
 
-    for x in range(2, 19):
+    for x in range(2, w - 1):
         text.char(x, 1, '\x0e')
-        text.char(x, 15, '\x12')
-    for y in range(2, 15):
+        text.char(x, h - 2, '\x12')
+    for y in range(2, h - 2):
         text.char(1, y, '\x0c')
-        text.char(19, y, '\x10')
+        text.char(w - 1, y, '\x10')
     text.char(1, 1, '\x0b')
-    text.char(1, 15, '\x0d')
-    text.char(19, 1, '\x0f')
-    text.char(19, 15, '\x11')
+    text.char(1, h - 2, '\x0d')
+    text.char(w - 1, 1, '\x0f')
+    text.char(w - 1, h - 2, '\x11')
 
     cursor.char(0, 0, '\x13')
     cursor.char(1, 0, '\x14')
@@ -63,13 +44,13 @@ def menu():
     cursor.move(0, 14)
 
     batt.text('\x98%1.2fV' % microcontroller.cpu.voltage, True)
-    batt.move(112, 0)
+    batt.move(game.width - 48, 0)
 
     files = [name[:-3] for name in os.listdir()
-             if name.endswith('.py') and name not in ('main.py', 'boot.py')]
-    for i, name in enumerate(files[:13]):
+             if name.endswith('.py') and name not in {'main.py', 'boot.py'}]
+    for i, name in enumerate(files[:h - 2]):
         text.cursor(2, 2 + i)
-        text.text(name[:17])
+        text.text(name[:w - 2])
 
     x = -2
     x_anim = 0, 1, 0, 1, 1, 0, 1, 0, 0, -1, 0, -1, -1, 0, -1, 0
@@ -77,7 +58,7 @@ def menu():
     y = prevy = 0
     game.render_block()
     while True:
-        buttons = buttonevents()
+        buttons = ugame.buttons.get_pressed()
         if buttons & ugame.K_O:
             selected = files[y]
             for y in range(16):
