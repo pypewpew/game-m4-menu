@@ -5,11 +5,18 @@ import sys
 import gc
 import supervisor
 import microcontroller
+import time
 
 
 _PALETTE = (
     b'b\xdb\x00\x00\xcey\xff\xffS\xc0\x01\x80K\x00\xb6\xa9\x00\x00\x00\x00'
     b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+
+def wait_for_release(buttons=0xff, timeout=0):
+    start = time.monotonic()
+    while ugame.buttons.get_pressed() & buttons:
+        if timeout and time.monotonic() - start > timeout:
+            break
 
 def menu():
     game = stage.Stage(ugame.display, 24)
@@ -66,18 +73,19 @@ def menu():
                     text.char(x, y, '\x00')
             game.layers = [text]
             game.render_block()
-            while ugame.buttons.get_pressed():
-                pass
+            wait_for_release()
             return selected
         elif buttons & ugame.K_UP and y > 0:
             y -= 1
+            wait_for_release(ugame.K_UP, 0.25)
         elif buttons & ugame.K_DOWN and y < len(files) - 1:
             y += 1
+            wait_for_release(ugame.K_DOWN, 0.25)
         x += x_anim[x_frame]
         x_frame = (x_frame + 1) % len(x_anim)
         cursor.move(x, y * 6 + prevy * 2 + 14)
         prevy = y
-        game.render_block(0, y * 8 + 8, 32, y * 8 + 40)
+        game.render_block(0, y * 8 + 4, 32, y * 8 + 40)
         game.tick()
 
 
