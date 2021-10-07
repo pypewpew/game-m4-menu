@@ -1,10 +1,10 @@
 import ugame
 import stage
 import os
-import microcontroller
 import sys
 import gc
-from micropython import const
+import supervisor
+import microcontroller
 
 
 _PALETTE = (
@@ -12,7 +12,7 @@ _PALETTE = (
     b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
 
 def menu():
-    game = stage.Stage(ugame.display, 24, scale=2)
+    game = stage.Stage(ugame.display, 24)
     w = game.width // 8
     h = game.height // 8
     cursor = stage.Text(2, 2)
@@ -66,6 +66,8 @@ def menu():
                     text.char(x, y, '\x00')
             game.layers = [text]
             game.render_block()
+            while ugame.buttons.get_pressed():
+                pass
             return selected
         elif buttons & ugame.K_UP and y > 0:
             y -= 1
@@ -80,7 +82,5 @@ def menu():
 
 
 selected = menu()
-gc.collect()
-__import__(selected)
-
-microcontroller.reset()
+supervisor.set_next_code_file("%s.py" % selected)
+supervisor.reload()
