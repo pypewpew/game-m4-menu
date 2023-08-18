@@ -50,12 +50,23 @@ def menu():
     cursor.char(1, 1, '\x16')
     cursor.move(0, 14)
 
-    batt.text('\x98%1.2fV' % microcontroller.cpu.voltage, True)
+    batt.text('\x98%1.2fV' % (microcontroller.cpu.voltage or 0), True)
     batt.move(game.width - 48, 0)
 
-    files = [name[:-3] for name in os.listdir()
-             if name.endswith('.py') and name not in {'main.py', 'boot.py'}]
-    for i, name in enumerate(files[:h - 2]):
+    files = {}
+    for entry in os.listdir():
+        if entry.endswith('.py'):
+            if entry in {'main.py', 'boot.py'}:
+                continue
+            files[entry[:-3]] = entry
+        else:
+            try:
+                os.stat(entry + '/code.py')
+            except OSError:
+                continue
+            files[entry] = entry + '/code.py'
+    entries = sorted(files.keys())
+    for i, name in enumerate(entries[:h - 2]):
         text.cursor(2, 2 + i)
         text.text(name[:w - 2])
 
@@ -67,14 +78,14 @@ def menu():
     while True:
         buttons = ugame.buttons.get_pressed()
         if buttons & ugame.K_O:
-            selected = files[y]
+            selected = entries[y]
             for y in range(16):
                 for x in range(20):
                     text.char(x, y, '\x00')
             game.layers = [text]
             game.render_block()
             wait_for_release()
-            return selected
+            return files[selected]
         elif buttons & ugame.K_UP and y > 0:
             y -= 1
             wait_for_release(ugame.K_UP, 0.25)
@@ -89,6 +100,7 @@ def menu():
         game.tick()
 
 
+supervisor.status_bar.display = False
 selected = menu()
-supervisor.set_next_code_file("%s.py" % selected)
+supervisor.set_next_code_file(selected, reload_on_success=True)
 supervisor.reload()
